@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  HR
+  EMPLOYEE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  CUTI_TAHUNAN
+  SAKIT
+  IZIN
+}
+
+model User {
+  id         Int          @id @default(autoincrement())
+  nip        String       @unique
+  name       String
+  email      String       @unique
+  password   String
+  role       Role         @default(EMPLOYEE)
+  position   String?
+  department String?
+  photo_url  String?
+  createdAt  DateTime     @default(now())
+
+  attendances Attendance[]
+  leaves      Leave[]
+  payrolls    Payroll[]
+}
+
+enum AttendanceStatus {
+  HADIR
+  TERLAMBAT
+  ALPHA
+  IZIN
+  SAKIT
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String
+  clockIn   DateTime @default(now())
+  clockOut  DateTime?
+  status    AttendanceStatus @default(HADIR)
+  createdAt DateTime @default(now())
+}
+
+model Leave {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  type      LeaveType   @default(CUTI_TAHUNAN)
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payroll {
+  id         Int   @id @default(autoincrement())
+  userId     Int
+  month      Int
+  year       Int
+  baseSalary Float
+  allowances Float @default(0)
+  deductions Float @default(0)
+  netSalary  Float
+
+  user       User  @relation(fields: [userId], references: [id])
+}
