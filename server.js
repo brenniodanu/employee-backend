@@ -1,10 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const cron = require('node-cron'); // 1. Import node-cron
+const cron = require('node-cron');
 
-// Import controller untuk cron job
-const { autoMarkAlpha } = require('./controllers/attendanceController'); // 2. Import autoMarkAlpha
+const { autoMarkAlpha } = require('./controllers/attendanceController');
 
 const authRoutes = require('./routes/authRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
@@ -15,7 +14,18 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
-app.use(cors());
+// --- Konfigurasi CORS Baru ---
+app.use(cors({
+  origin: [
+    'https://employee-frontend-seven-topaz.vercel.app',
+    'https://employee-frontend-qccf.vercel.app',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -25,7 +35,6 @@ app.use('/api/leave', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// 3. Setup Cron Job: Jalankan otomatis setiap hari Senin - Jumat pukul 23:59 WIB
 cron.schedule('59 23 * * 1-5', async () => {
   console.log('[CRON JOB] Menjalankan pengecekan otomatis Karyawan ALPHA...');
   await autoMarkAlpha();
