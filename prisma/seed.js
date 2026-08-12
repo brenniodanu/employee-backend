@@ -19,13 +19,19 @@ const lastNames = [
 const departments = ['IT', 'HR', 'Finance', 'Marketing', 'Operations', 'Sales'];
 
 async function main() {
+  console.log('Memulai proses seeding...');
+
   const adminPassword = await bcrypt.hash('admin123', 10);
   const userPassword = await bcrypt.hash('user123', 10);
 
   // 1. Buat / Perbarui Akun Admin Utama
   await prisma.user.upsert({
     where: { email: 'admin@mail.com' },
-    update: { password: adminPassword },
+    update: { 
+      nip: 'ADM001',
+      password: adminPassword,
+      role: 'ADMIN'
+    },
     create: {
       nip: 'ADM001',
       name: 'Administrator',
@@ -36,7 +42,29 @@ async function main() {
     },
   });
 
-  console.log('Akun Admin berhasil disiapkan.');
+  console.log('Akun Admin (admin@mail.com) berhasil disiapkan.');
+
+  // =========================================================
+  // TAMBAHAN: Buat / Perbarui Akun Karyawan Tetap untuk Test
+  // =========================================================
+  await prisma.user.upsert({
+    where: { email: 'user@mail.com' },
+    update: {
+      nip: 'EMP000',
+      password: userPassword,
+      role: 'EMPLOYEE',
+    },
+    create: {
+      nip: 'EMP000',
+      name: 'Karyawan Test',
+      email: 'user@mail.com',
+      password: userPassword,
+      role: 'EMPLOYEE',
+      department: 'IT',
+    },
+  });
+
+  console.log('Akun Karyawan Test (user@mail.com) berhasil disiapkan.');
 
   // 2. Generate 30 Data Karyawan Acak
   const totalKaryawan = 30;
@@ -46,21 +74,44 @@ async function main() {
     const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
     const fullName = `${fn} ${ln}`;
     const email = `${fn.toLowerCase()}.${ln.toLowerCase()}${i}@mail.com`;
+    
+    // NIP dibuat unik berurutan
     const nip = `EMP${String(100 + i).padStart(4, '0')}`;
     const dept = departments[Math.floor(Math.random() * departments.length)];
 
-    await prisma.user.upsert({
-      where: { email: email },
-      update: {},
-      create: {
-        nip: nip,
-        name: fullName,
-        email: email,
-        password: userPassword,
-        role: 'EMPLOYEE',
-        department: dept,
-      },
-    });
+    try {
+      await prisma.user.upsert({
+        where: { email: email },
+        update: {
+          nip: nip,
+          name: fullName,
+          department: dept,
+        },
+        create: {
+          nip: nip,
+          name: fullName,
+          email: email,
+          password: userPassword,
+          role: 'EMPLOYEE',
+          department: dept,
+        },
+      });
+    } catch (err) {
+      // Jika NIP bentrok dengan data lama, buat NIP acak menggunakan timestamp
+      const fallbackNip = `EMP${Date.now().toString().slice(-4)}${i}`;
+      await prisma.user.upsert({
+        where: { email: email },
+        update: { name: fullName, department: dept },
+        create: {
+          nip: fallbackNip,
+          name: fullName,
+          email: email,
+          password: userPassword,
+          role: 'EMPLOYEE',
+          department: dept,
+        },
+      });
+    }
   }
 
   console.log(`Berhasil menambahkan ${totalKaryawan} data karyawan acak!`);
