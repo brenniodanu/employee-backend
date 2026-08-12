@@ -23,15 +23,16 @@ app.use(cors({
   credentials: true
 }));
 
-// FIX ERROR BINTANG: Ubah '*' menjadi '/*' untuk Express V5
-app.options('/*', cors());
-
 app.use(express.json());
 
-// Rute utama agar Vercel mendeteksi server hidup (Health Check)
+// Rute utama (Health Check Vercel)
 app.get('/', (req, res) => {
   res.send('Server Employee Backend Berhasil Berjalan!');
 });
+
+// --- TAMBAHKAN BAGIAN INI UNTUK MENCEGAH ERROR FAVICON ---
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/favicon.png', (req, res) => res.status(204).end());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
