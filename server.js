@@ -26,6 +26,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Tambahkan baris ini untuk menangani preflight request OPTIONS di Vercel:
+app.options('*', cors());
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
