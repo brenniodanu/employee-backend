@@ -31,6 +31,10 @@ app.options('*', cors());
 
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Server Employee Backend Berhasil Berjalan!');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
