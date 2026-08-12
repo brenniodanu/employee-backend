@@ -2,10 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// node-cron dimatikan karena Vercel Serverless Function tidak mendukung background process terus-menerus
-// const cron = require('node-cron');
-// const { autoMarkAlpha } = require('./controllers/attendanceController');
-
 const authRoutes = require('./routes/authRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
@@ -27,10 +23,12 @@ app.use(cors({
   credentials: true
 }));
 
-app.options('*', cors());
+// FIX ERROR BINTANG: Ubah '*' menjadi '/*' untuk Express V5
+app.options('/*', cors());
 
 app.use(express.json());
 
+// Rute utama agar Vercel mendeteksi server hidup (Health Check)
 app.get('/', (req, res) => {
   res.send('Server Employee Backend Berhasil Berjalan!');
 });
@@ -42,17 +40,13 @@ app.use('/api/leave', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-/* 
-// Cron Job dimatikan untuk Vercel:
-cron.schedule('59 23 * * 1-5', async () => {
-  console.log('[CRON JOB] Menjalankan pengecekan otomatis Karyawan ALPHA...');
-  await autoMarkAlpha();
-});
-*/
+// WAJIB UNTUK VERCEL: Ekspor app
+module.exports = app;
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
-
-module.exports = app; 
+// Jalankan app.listen HANYA di komputer lokal, matikan di Vercel
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
+  });
+}
